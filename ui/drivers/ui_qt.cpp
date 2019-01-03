@@ -32,7 +32,6 @@ extern "C" {
 }
 
 #include "ui_qt.h"
-#include "qt/filedropwidget.h"
 #include "qt/viewoptionsdialog.h"
 
 #include <QApplication>
@@ -148,7 +147,7 @@ void ThumbnailLabel::paintEvent(QPaintEvent *event)
    o.initFrom(this);
    p.begin(this);
    style()->drawPrimitive(
-     QStyle::PE_Widget, &o, &p, this);
+      QStyle::PE_Widget, &o, &p, this);
    p.end();
 
    if (!m_pixmap || m_pixmap->isNull())
@@ -219,6 +218,7 @@ static void* ui_companion_qt_init(void)
    MainWindow *mainwindow = NULL;
    QHBoxLayout *browserButtonsHBoxLayout = NULL;
    QVBoxLayout *layout = NULL;
+   QVBoxLayout *playlistViewsLayout = NULL;
    QVBoxLayout *launchWithWidgetLayout = NULL;
    QHBoxLayout *coreComboBoxLayout = NULL;
    QMenuBar *menu = NULL;
@@ -239,6 +239,7 @@ static void* ui_companion_qt_init(void)
    QDockWidget *browserAndPlaylistTabDock = NULL;
    QDockWidget *coreSelectionDock = NULL;
    QTabWidget *browserAndPlaylistTabWidget = NULL;
+   QStackedWidget *centralWidget = NULL;
    QWidget *widget = NULL;
    QWidget *browserWidget = NULL;
    QWidget *playlistWidget = NULL;
@@ -288,7 +289,7 @@ static void* ui_companion_qt_init(void)
 
    listWidget = mainwindow->playlistListWidget();
 
-   widget = new FileDropWidget(mainwindow);
+   widget = mainwindow->playlistViews();
    widget->setObjectName("tableWidget");
    widget->setContextMenuPolicy(Qt::CustomContextMenu);
 
@@ -297,13 +298,18 @@ static void* ui_companion_qt_init(void)
    QObject::connect(widget, SIGNAL(deletePressed()), mainwindow, SLOT(deleteCurrentPlaylistItem()));
    QObject::connect(widget, SIGNAL(customContextMenuRequested(const QPoint&)), mainwindow, SLOT(onFileDropWidgetContextMenuRequested(const QPoint&)));
 
-   layout = new QVBoxLayout();
-   layout->addWidget(mainwindow->contentTableView());
-   layout->addWidget(mainwindow->contentGridWidget());
+   playlistViewsLayout = new QVBoxLayout();
+   playlistViewsLayout->addWidget(mainwindow->contentTableView());
+   playlistViewsLayout->addWidget(mainwindow->contentGridWidget());
 
-   widget->setLayout(layout);
+   widget->setLayout(playlistViewsLayout);
 
-   mainwindow->setCentralWidget(widget);
+   centralWidget = mainwindow->centralWidget();
+
+   centralWidget->addWidget(widget);
+   centralWidget->addWidget(mainwindow->fileTableView());
+
+   mainwindow->setCentralWidget(centralWidget);
 
    menu = mainwindow->menuBar();
 
@@ -554,9 +560,6 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_ICONS);
       else
          mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
-
-      /* we set it to the same thing a second time so that m_lastViewType is also equal to the startup view type */
-      mainwindow->setCurrentViewType(mainwindow->getCurrentViewType());
    }
    else
       mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
@@ -573,12 +576,7 @@ static void* ui_companion_qt_init(void)
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_TITLE_SCREEN);
       else
          mainwindow->setCurrentThumbnailType(THUMBNAIL_TYPE_BOXART);
-
-      /* we set it to the same thing a second time so that m_lastThumbnailType is also equal to the startup view type */
-      mainwindow->setCurrentThumbnailType(mainwindow->getCurrentThumbnailType());
    }
-   else
-      mainwindow->setCurrentViewType(MainWindow::VIEW_TYPE_LIST);
 
    /* We make sure to hook up the tab widget callback only after the tabs themselves have been added,
     * but before changing to a specific one, to avoid the callback firing before the view type is set.
@@ -693,13 +691,13 @@ static void ui_companion_qt_event_command(void *data, enum event_command cmd)
 
    switch (cmd)
    {
-      case CMD_EVENT_SHADERS_APPLY_CHANGES:
-      case CMD_EVENT_SHADER_PRESET_LOADED:
-         RARCH_LOG("[Qt]: Reloading shader parameters.\n");
-         win_handle->qtWindow->deferReloadShaderParams();
-         break;
-      default:
-         break;
+   case CMD_EVENT_SHADERS_APPLY_CHANGES:
+   case CMD_EVENT_SHADER_PRESET_LOADED:
+      RARCH_LOG("[Qt]: Reloading shader parameters.\n");
+      win_handle->qtWindow->deferReloadShaderParams();
+      break;
+   default:
+      break;
    }
 }
 

@@ -42,6 +42,9 @@
 #include <QCache>
 #include <QSortFilterProxyModel>
 #include <QDir>
+#include <QStackedWidget>
+
+#include "qt/filedropwidget.h"
 
 extern "C" {
 #include <retro_assert.h>
@@ -188,11 +191,11 @@ protected:
    void paintEvent(QPaintEvent *event);
    void resizeEvent(QResizeEvent *event);
 private:
-    void updateMargins();
+   void updateMargins();
 
-    QPixmap *m_pixmap;
-    int m_pixmapWidth;
-    int m_pixmapHeight;
+   QPixmap *m_pixmap;
+   int m_pixmapWidth;
+   int m_pixmapHeight;
 };
 
 class TreeView : public QTreeView
@@ -276,8 +279,8 @@ class GridItem : public QWidget
 {
    Q_OBJECT
 
-   Q_PROPERTY(QString thumbnailvalign READ getThumbnailVerticalAlign WRITE setThumbnailVerticalAlign)
-   Q_PROPERTY(int padding READ getPadding WRITE setPadding)
+      Q_PROPERTY(QString thumbnailvalign READ getThumbnailVerticalAlign WRITE setThumbnailVerticalAlign)
+      Q_PROPERTY(int padding READ getPadding WRITE setPadding)
 
 public:
    GridItem(QWidget* parent);
@@ -291,6 +294,13 @@ public:
    void setThumbnailVerticalAlign(const QString valign);
 };
 
+class FileSystemProxyModel : public QSortFilterProxyModel
+{
+protected:
+   virtual bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
+   void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
+};
+
 class MainWindow : public QMainWindow
 {
    Q_OBJECT
@@ -300,6 +310,12 @@ public:
    {
       VIEW_TYPE_ICONS,
       VIEW_TYPE_LIST
+   };
+
+   enum BrowserType
+   {
+      BROWSER_TYPE_PLAYLISTS,
+      BROWSER_TYPE_FILES
    };
 
    enum Theme
@@ -323,7 +339,10 @@ public:
    TreeView* dirTreeView();
    PlaylistModel* playlistModel();
    ListWidget* playlistListWidget();
+   QStackedWidget* centralWidget();
    TableView* contentTableView();
+   QTableView* fileTableView();
+   FileDropWidget* playlistViews();
    GridView* contentGridView();
    QWidget* contentGridWidget();
    QWidget* searchWidget();
@@ -363,6 +382,7 @@ public:
    QString getCurrentPlaylistPath();
    QModelIndex getCurrentContentIndex();
    QHash<QString, QString> getCurrentContentHash();
+   QHash<QString, QString> getFileContentHash(const QModelIndex &index);
    static double lerp(double x, double y, double a, double b, double d);
    QString getSpecialPlaylistPath(SpecialPlaylist playlist);
    QVector<QPair<QString, QString> > getPlaylists();
@@ -440,9 +460,12 @@ private slots:
    void onCurrentListItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
    void onCurrentListItemDataChanged(QListWidgetItem *item);
    void currentItemChanged(const QModelIndex &index);
+   void currentItemChanged(const QHash<QString, QString> &hash);
+   void currentFileChanged(const QModelIndex &index);
    void onSearchEnterPressed();
    void onSearchLineEditEdited(const QString &text);
    void onContentItemDoubleClicked(const QModelIndex &index);
+   void onFileDoubleClicked(const QModelIndex &index);
    void onCoreLoadWindowClosed();
    void onTreeViewItemsSelected(QModelIndexList selectedIndexes);
    void onSearchResetClicked();
@@ -507,9 +530,11 @@ private:
    void renamePlaylistItem(QListWidgetItem *item, QString newName);
    bool currentPlaylistIsSpecial();
    bool currentPlaylistIsAll();
+   void applySearch();
 
    PlaylistModel *m_playlistModel;
    QSortFilterProxyModel *m_proxyModel;
+   FileSystemProxyModel *m_proxyFileModel;
    LoadCoreWindow *m_loadCoreWindow;
    QTimer *m_timer;
    QString m_currentCore;
@@ -517,8 +542,12 @@ private:
    QLabel *m_statusLabel;
    TreeView *m_dirTree;
    QFileSystemModel *m_dirModel;
+   QFileSystemModel *m_fileModel;
    ListWidget *m_listWidget;
+   QStackedWidget *m_centralWidget;
    TableView *m_tableView;
+   QTableView *m_fileTableView;
+   FileDropWidget *m_playlistViews;
    QWidget *m_searchWidget;
    QLineEdit *m_searchLineEdit;
    QDockWidget *m_searchDock;
@@ -561,8 +590,6 @@ private:
    QProgressBar *m_gridProgressBar;
    QWidget *m_gridProgressWidget;
    QHash<QString, QString> m_currentGridHash;
-   ViewType m_lastViewType;
-   ThumbnailType m_lastThumbnailType;
    QPointer<ThumbnailWidget> m_currentGridWidget;
    int m_allPlaylistsListMaxCount;
    int m_allPlaylistsGridMaxCount;
@@ -596,6 +623,8 @@ private:
 
    QTimer *m_thumbnailTimer;
    GridItem m_gridItem;
+   BrowserType m_currentBrowser;
+   QRegExp m_searchRegExp;
 
 protected:
    void closeEvent(QCloseEvent *event);
