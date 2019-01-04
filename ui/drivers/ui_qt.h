@@ -482,6 +482,7 @@ private slots:
    void onContributorsClicked();
    void onItemChanged();
    void onFileSystemDirLoaded(const QString &path);
+   void onFileBrowserTableDirLoaded(const QString &path);
    void onDownloadScroll(QString path);
    void onDownloadScrollAgain(QString path);
    int onExtractArchive(QString path, QString extractionDir, QString tempExtension, retro_task_callback_t cb);
@@ -625,6 +626,7 @@ private:
    GridItem m_gridItem;
    BrowserType m_currentBrowser;
    QRegExp m_searchRegExp;
+   QByteArray m_fileTableHeaderState;
 
 protected:
    void closeEvent(QCloseEvent *event);

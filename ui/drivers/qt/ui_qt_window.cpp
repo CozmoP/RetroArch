@@ -455,6 +455,8 @@ MainWindow::MainWindow(QWidget *parent) :
    m_fileTableView->verticalHeader()->setVisible(false);
    m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);
    m_fileTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+   m_fileTableView->horizontalHeader()->setStretchLastSection(true);
+   m_fileTableView->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
    m_gridView->setModel(m_proxyModel);
@@ -586,6 +588,7 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(viewTypeIconsAction, SIGNAL(triggered()), this, SLOT(onIconViewClicked()));
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
+   connect(m_fileModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileBrowserTableDirLoaded(const QString&)));
 
    m_dirTree->setCurrentIndex(m_dirModel->index(settings->paths.directory_menu_content));
    m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
@@ -731,6 +734,15 @@ void MainWindow::onFileSystemDirLoaded(const QString &path)
 
       emit scrollToDownloads(path);
    }
+}
+
+/* workaround for columns being resized */
+void MainWindow::onFileBrowserTableDirLoaded(const QString &path)
+{
+   if (path.isEmpty())
+      return;
+
+   m_fileTableView->horizontalHeader()->restoreState(m_fileTableHeaderState);
 }
 
 QVector<QPair<QString, QString> > MainWindow::getPlaylists()
@@ -1550,6 +1562,7 @@ void MainWindow::selectBrowserDir(QString path)
    {
       QModelIndex sourceIndex = m_fileModel->setRootPath(path);
       QModelIndex proxyIndex = m_proxyFileModel->mapFromSource(sourceIndex);
+      m_fileTableHeaderState = m_fileTableView->horizontalHeader()->saveState();
 
       if (proxyIndex.isValid())
       {
