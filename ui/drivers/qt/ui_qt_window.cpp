@@ -525,10 +525,6 @@ MainWindow::MainWindow(QWidget *parent) :
       m_dirTree->hideColumn(3);
    }
 
-   m_dirTree->setCurrentIndex(m_dirModel->index(settings->paths.directory_menu_content));
-   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
-   m_dirTree->expand(m_dirTree->currentIndex());
-
    reloadPlaylists();
 
    m_searchWidget->setLayout(new QHBoxLayout());
@@ -593,6 +589,10 @@ MainWindow::MainWindow(QWidget *parent) :
    connect(viewTypeListAction, SIGNAL(triggered()), this, SLOT(onListViewClicked()));
    connect(m_dirModel, SIGNAL(directoryLoaded(const QString&)), this, SLOT(onFileSystemDirLoaded(const QString&)));
 
+   m_dirTree->setCurrentIndex(m_dirModel->index(settings->paths.directory_menu_content));
+   m_dirTree->scrollTo(m_dirTree->currentIndex(), QAbstractItemView::PositionAtTop);
+   m_dirTree->expand(m_dirTree->currentIndex());
+
    /* must use queued connection */
    connect(this, SIGNAL(scrollToDownloads(QString)), this, SLOT(onDownloadScroll(QString)), Qt::QueuedConnection);
    connect(this, SIGNAL(scrollToDownloadsAgain(QString)), this, SLOT(onDownloadScrollAgain(QString)), Qt::QueuedConnection);
@@ -622,6 +622,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
    connect(m_gridView->selectionModel(), SIGNAL(currentChanged(const QModelIndex& , const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
    connect(m_tableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(currentItemChanged(const QModelIndex&)));
+   connect(m_fileTableView->selectionModel(), SIGNAL(currentChanged(const QModelIndex&, const QModelIndex&)), this, SLOT(currentFileChanged(const QModelIndex&)));
 
    connect(m_gridView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onContentItemDoubleClicked(const QModelIndex&)));
    connect(m_tableView, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(onContentItemDoubleClicked(const QModelIndex&)));
