@@ -533,6 +533,11 @@ static void* ui_companion_qt_init(void)
       if (qsettings->contains("dock_positions"))
          mainwindow->restoreState(qsettings->value("dock_positions").toByteArray());
 
+   if (qsettings->contains("file_browser_table_headers"))
+      mainwindow->fileTableView()->horizontalHeader()->restoreState(qsettings->value("file_browser_table_headers").toByteArray());
+   else
+      mainwindow->fileTableView()->horizontalHeader()->resizeSection(0, 300);
+
    if (qsettings->contains("theme"))
    {
       QString themeStr = qsettings->value("theme").toString();

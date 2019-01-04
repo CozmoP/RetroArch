@@ -455,8 +455,6 @@ MainWindow::MainWindow(QWidget *parent) :
    m_fileTableView->verticalHeader()->setVisible(false);
    m_fileTableView->setSelectionMode(QAbstractItemView::SingleSelection);
    m_fileTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-   /* TODO remember column sizes */
-   m_fileTableView->horizontalHeader()->resizeSection(0, 300);
 
    m_gridView->setItemDelegate(new ThumbnailDelegate(m_gridItem, this));
    m_gridView->setModel(m_proxyModel);
@@ -2892,6 +2890,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
       m_settings->setValue("last_tab", m_browserAndPlaylistTabWidget->currentIndex());
 
    m_settings->setValue("view_type", getCurrentViewTypeString());
+   m_settings->setValue("file_browser_table_headers", m_fileTableView->horizontalHeader()->saveState());
 
    QMainWindow::closeEvent(event);
 }
